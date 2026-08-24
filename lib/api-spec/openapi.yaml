@@ -1,0 +1,157 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: predictor
+    description: IPL innings score prediction operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /predict:
+    post:
+      operationId: predictScore
+      tags: [predictor]
+      summary: Predict an IPL innings total
+      description: Returns a predicted final score and a confidence range for the supplied match state.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PredictionInput"
+      responses:
+        "200":
+          description: Prediction result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PredictionResult"
+        "400":
+          description: Invalid prediction input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /model-info:
+    get:
+      operationId: getModelInfo
+      tags: [predictor]
+      summary: Get model comparison and training metadata
+      responses:
+        "200":
+          description: Model information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelInfo"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    PredictionInput:
+      type: object
+      properties:
+        battingTeam:
+          type: string
+          minLength: 1
+        bowlingTeam:
+          type: string
+          minLength: 1
+        score:
+          type: number
+          minimum: 0
+        overs:
+          type: number
+          minimum: 0
+          maximum: 20
+        wickets:
+          type: number
+          minimum: 0
+          maximum: 10
+        runsLast5:
+          type: number
+          minimum: 0
+        wicketsLast5:
+          type: number
+          minimum: 0
+          maximum: 10
+      required: [battingTeam, bowlingTeam, score, overs, wickets, runsLast5, wicketsLast5]
+    PredictionResult:
+      type: object
+      properties:
+        predictedScore:
+          type: number
+        lowerBound:
+          type: number
+        upperBound:
+          type: number
+        confidence:
+          type: string
+        model:
+          type: string
+        inningsProgress:
+          type: number
+      required: [predictedScore, lowerBound, upperBound, confidence, model, inningsProgress]
+    ModelMetrics:
+      type: object
+      properties:
+        name:
+          type: string
+        rmse:
+          type: number
+        mae:
+          type: number
+        r2:
+          type: number
+        selected:
+          type: boolean
+      required: [name, rmse, mae, r2, selected]
+    ModelInfo:
+      type: object
+      properties:
+        selectedModel:
+          type: string
+        dataset:
+          type: string
+        rows:
+          type: number
+        features:
+          type: array
+          items:
+            type: string
+        metrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModelMetrics"
+      required: [selectedModel, dataset, rows, features, metrics]
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
